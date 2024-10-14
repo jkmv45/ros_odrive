@@ -1,0 +1,5 @@
+float32 brake_resistor_meas_current 
+float32 brake_resistor_calc_current 
+float32 brake_resistor_duty_cycle
+float32 brake_resistor_chopper_temp 
+uint32 brake_resistor_current_status

@@ -8,3 +8,5 @@ uint32 active_errors
 uint8 axis_state
 uint8 procedure_result
 bool trajectory_done_flag
+float32 elec_power
+float32 mech_power

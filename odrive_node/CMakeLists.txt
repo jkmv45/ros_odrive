@@ -13,8 +13,14 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ControlMessage.msg"
   "msg/ControllerStatus.msg"
+  "msg/BrakeResistorStatus.msg"
   "msg/ODriveStatus.msg"
   "srv/AxisState.srv"
+  "srv/ClearErrors.srv"
+  "srv/Limits.srv"
+  "srv/TrajAccLimits.srv"
+  "srv/TrajVelLimits.srv"
+  "srv/TrajInertia.srv"
 )
 ament_export_dependencies(rosidl_default_runtime)
 

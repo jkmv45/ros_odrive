@@ -1,0 +1,5 @@
+float32 velocity_limit 
+float32 current_limit 
+---
+uint32 active_errors
+uint8 procedure_result

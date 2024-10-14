@@ -1,0 +1,5 @@
+float32 traj_accel_limit
+float32 traj_deaccel_limit
+---
+uint32 active_errors
+uint8 procedure_result
