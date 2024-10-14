@@ -75,7 +75,10 @@ ODriveCanNode::ODriveCanNode(const std::string& node_name) : rclcpp::Node(node_n
 
     rclcpp::QoS srv_qos(rclcpp::KeepAll{});
     axis_state_service_ = rclcpp::Node::create_service<AxisState>("request_axis_state", std::bind(&ODriveCanNode::axis_state_service_callback, this, _1, _2), srv_qos.get_rmw_qos_profile());
-    clear_errors_service_ = rclcpp::Node::create_service<ClearErrors>("clear_errors", std::bind(&ODriveCanNode::clear_errors_service_callback, this, _1, _2), srv_qos.get_rmw_qos_profile());
+    
+    rclcpp::QoS srv_clear_errors_qos(rclcpp::KeepAll{});
+    service_clear_errors_ = rclcpp::Node::create_service<Empty>("clear_errors", std::bind(&ODriveCanNode::service_clear_errors_callback, this, _1, _2), srv_clear_errors_qos.get_rmw_qos_profile());
+
     set_limits_service_ = rclcpp::Node::create_service<Limits>("set_limits", std::bind(&ODriveCanNode::limits_service_callback, this, _1, _2), srv_qos.get_rmw_qos_profile());
     set_traj_acc_limits_service_ = rclcpp::Node::create_service<TrajAccLimits>("set_traj_acc_limits", std::bind(&ODriveCanNode::traj_acc_limits_service_callback, this, _1, _2), srv_qos.get_rmw_qos_profile());
     set_traj_vel_limits_service_ = rclcpp::Node::create_service<TrajVelLimits>("set_traj_vel_limits", std::bind(&ODriveCanNode::traj_vel_limit_service_callback, this, _1, _2), srv_qos.get_rmw_qos_profile());
@@ -85,7 +88,7 @@ ODriveCanNode::ODriveCanNode(const std::string& node_name) : rclcpp::Node(node_n
 void ODriveCanNode::deinit() {
     sub_evt_.deinit();
     axis_state_srv_evt_.deinit();
-    clear_errors_srv_evt_.deinit();
+    srv_clear_errors_evt_.deinit();
     set_limits_srv_evt_.deinit();
     traj_acc_limits_srv_evt_.deinit();
     traj_vel_limits_srv_evt_.deinit();
@@ -110,7 +113,7 @@ bool ODriveCanNode::init(EpollEventLoop* event_loop) {
         RCLCPP_ERROR(rclcpp::Node::get_logger(), "Failed to initialize axis state service event");
         return false;
     }
-    if (!clear_errors_srv_evt_.init(event_loop, std::bind(&ODriveCanNode::clear_errors_callback, this))) {
+    if (!srv_clear_errors_evt_.init(event_loop, std::bind(&ODriveCanNode::request_clear_errors_callback, this))) {
         RCLCPP_ERROR(rclcpp::Node::get_logger(), "Failed to initialize clear errors service event");
         return false;
     }
@@ -285,22 +288,15 @@ void ODriveCanNode::request_state_callback() {
     can_intf_.send_can_frame(frame);
 }
 
-void ODriveCanNode::clear_errors_service_callback(const std::shared_ptr<ClearErrors::Request> request, std::shared_ptr<ClearErrors::Response> response) {
+void ODriveCanNode::service_clear_errors_callback(const std::shared_ptr<Empty::Request> request, std::shared_ptr<Empty::Response> response) {
     RCLCPP_INFO(rclcpp::Node::get_logger(), "clearing errors");
-    clear_errors_srv_evt_.set();
-
-    wait_for_result();
-
-    response->active_errors = ctrl_stat_.active_errors;
-    response->procedure_result = ctrl_stat_.procedure_result;
+    srv_clear_errors_evt_.set();
 }
-void ODriveCanNode::clear_errors_callback() {
+void ODriveCanNode::request_clear_errors_callback() {
     struct can_frame frame;
     frame.can_id = node_id_ << 5 | CmdId::kClearErrors;
-    {
-        write_le<uint8_t>(1, frame.data);
-    }
-    frame.can_dlc = 4;
+    write_le<uint8_t>(0, frame.data);
+    frame.can_dlc = 1;
     can_intf_.send_can_frame(frame);
 }
 

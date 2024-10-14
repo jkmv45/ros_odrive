@@ -7,7 +7,7 @@
 #include "odrive_can/msg/control_message.hpp"
 #include "odrive_can/msg/brake_resistor_status.hpp"
 #include "odrive_can/srv/axis_state.hpp"
-#include "odrive_can/srv/clear_errors.hpp"
+#include "std_srvs/srv/empty.hpp"
 #include "odrive_can/srv/limits.hpp"
 #include "odrive_can/srv/traj_acc_limits.hpp"
 #include "odrive_can/srv/traj_vel_limits.hpp"
@@ -30,7 +30,7 @@ using ControlMessage = odrive_can::msg::ControlMessage;
 using BrakeResistorStatus = odrive_can::msg::BrakeResistorStatus;
 
 using AxisState = odrive_can::srv::AxisState;
-using ClearErrors = odrive_can::srv::ClearErrors;
+using Empty = std_srvs::srv::Empty;
 using Limits = odrive_can::srv::Limits;
 using TrajVelLimits = odrive_can::srv::TrajVelLimits;
 using TrajAccLimits = odrive_can::srv::TrajAccLimits;
@@ -51,14 +51,14 @@ private:
 
     // Service Callbacks
     void axis_state_service_callback(const std::shared_ptr<AxisState::Request> request, std::shared_ptr<AxisState::Response> response);
-    void clear_errors_service_callback(const std::shared_ptr<ClearErrors::Request> request, std::shared_ptr<ClearErrors::Response> response);
+    void service_clear_errors_callback(const std::shared_ptr<Empty::Request> request, std::shared_ptr<Empty::Response> response);
     void limits_service_callback(const std::shared_ptr<Limits::Request> request, std::shared_ptr<Limits::Response> response);
     void traj_vel_limit_service_callback(const std::shared_ptr<TrajVelLimits::Request> request, std::shared_ptr<TrajVelLimits::Response> response);
     void traj_acc_limits_service_callback(const std::shared_ptr<TrajAccLimits::Request> request, std::shared_ptr<TrajAccLimits::Response> response);
     void traj_inertia_service_callback(const std::shared_ptr<TrajInertia::Request> request, std::shared_ptr<TrajInertia::Response> response);
     // Service Event Callback
     void request_state_callback();
-    void clear_errors_callback();
+    void request_clear_errors_callback();
     void set_limits_callback();
     void set_traj_vel_callback();
     void set_traj_acc_callback();
@@ -96,8 +96,8 @@ private:
     std::condition_variable fresh_heartbeat_;
     rclcpp::Service<AxisState>::SharedPtr axis_state_service_;
 
-    EpollEvent clear_errors_srv_evt_;
-    rclcpp::Service<ClearErrors>::SharedPtr clear_errors_service_;
+    EpollEvent srv_clear_errors_evt_;
+    rclcpp::Service<Empty>::SharedPtr service_clear_errors_;
 
     EpollEvent set_limits_srv_evt_;
     float vel_limit_;
