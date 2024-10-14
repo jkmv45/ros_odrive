@@ -25,7 +25,7 @@ enum CmdId : uint32_t {
     kGetIq = 0x014,                // ControllerStatus  - publisher
     kGetTemp,                      // SystemStatus      - publisher
     kGetBusVoltageCurrent = 0x017, // SystemStatus      - publisher
-    kClearErrors,                  // ClearErrors       - service
+    kClearErrors = 0x018,          // ClearErrors       - service
     kGetTorques = 0x01c,           // ControllerStatus  - publisher
     kGetPower = 0x01d,             // SystemStatus      - publisher
 };
@@ -131,6 +131,10 @@ bool ODriveCanNode::init(EpollEventLoop* event_loop) {
     }
     if (!traj_inertia_srv_evt_.init(event_loop, std::bind(&ODriveCanNode::set_traj_inertia_callback, this))) {
         RCLCPP_ERROR(rclcpp::Node::get_logger(), "Failed to initialize traj inertia service event");
+        return false;
+    }
+    if (!srv_clear_errors_evt_.init(event_loop, std::bind(&ODriveCanNode::request_clear_errors_callback, this))) {
+        RCLCPP_ERROR(rclcpp::Node::get_logger(), "Failed to initialize clear errors service event");
         return false;
     }
     RCLCPP_INFO(rclcpp::Node::get_logger(), "node_id: %d", node_id_);
