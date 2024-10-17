@@ -2,12 +2,12 @@
 #define ODRIVE_CAN_NODE_HPP
 
 #include <rclcpp/rclcpp.hpp>
+#include <std_srvs/srv/empty.hpp>
 #include "odrive_can/msg/o_drive_status.hpp"
 #include "odrive_can/msg/controller_status.hpp"
 #include "odrive_can/msg/control_message.hpp"
 #include "odrive_can/msg/brake_resistor_status.hpp"
 #include "odrive_can/srv/axis_state.hpp"
-#include "std_srvs/srv/empty.hpp"
 #include "odrive_can/srv/limits.hpp"
 #include "odrive_can/srv/traj_acc_limits.hpp"
 #include "odrive_can/srv/traj_vel_limits.hpp"
@@ -63,6 +63,11 @@ private:
     void set_traj_vel_callback();
     void set_traj_acc_callback();
     void set_traj_inertia_callback();
+    void br_sdo1_callback();
+    void br_sdo2_callback();
+    void br_sdo3_callback();
+    void br_sdo4_callback();
+    void br_sdo5_callback();
     // Utilities
     inline bool verify_length(const std::string&name, uint8_t expected, uint8_t length);
     void wait_for_result();
@@ -80,8 +85,12 @@ private:
     ODriveStatus odrv_stat_ = ODriveStatus();
     rclcpp::Publisher<ODriveStatus>::SharedPtr odrv_publisher_;
 
+    EpollEvent br_sdo1_evt_;
+    EpollEvent br_sdo2_evt_;
+    EpollEvent br_sdo3_evt_;
+    EpollEvent br_sdo4_evt_;
+    EpollEvent br_sdo5_evt_;
     short int br_pub_flag_ = 0;
-    std::mutex br_stat_mutex_;
     BrakeResistorStatus br_stat_ = BrakeResistorStatus();
     rclcpp::Publisher<BrakeResistorStatus>::SharedPtr br_publisher_;
 
