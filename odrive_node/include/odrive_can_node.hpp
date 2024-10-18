@@ -36,6 +36,8 @@ using TrajVelLimits = odrive_can::srv::TrajVelLimits;
 using TrajAccLimits = odrive_can::srv::TrajAccLimits;
 using TrajInertia = odrive_can::srv::TrajInertia;
 
+using namespace std::chrono_literals;
+
 class ODriveCanNode : public rclcpp::Node {
 public:
     ODriveCanNode(const std::string& node_name);
@@ -44,6 +46,7 @@ public:
 private:
     // CAN Recieve Event Callback
     void recv_callback(const can_frame& frame);
+    void brake_resistor_sdo_timer_callback();
     // Subscriber Callbacks
     void ctrl_msg_subscriber_callback(const ControlMessage::SharedPtr msg);
     // Subscriber Event Callbacks
@@ -74,6 +77,8 @@ private:
     
     uint16_t node_id_;
     SocketCanIntf can_intf_ = SocketCanIntf();
+
+    rclcpp::TimerBase::SharedPtr brake_resistor_sdo_timer_;
     
     short int ctrl_pub_flag_ = 0;
     std::mutex ctrl_stat_mutex_;

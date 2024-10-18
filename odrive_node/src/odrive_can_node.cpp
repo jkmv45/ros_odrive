@@ -83,6 +83,8 @@ ODriveCanNode::ODriveCanNode(const std::string& node_name) : rclcpp::Node(node_n
     set_traj_acc_limits_service_ = rclcpp::Node::create_service<TrajAccLimits>("set_traj_acc_limits", std::bind(&ODriveCanNode::traj_acc_limits_service_callback, this, _1, _2), srv_qos.get_rmw_qos_profile());
     set_traj_vel_limits_service_ = rclcpp::Node::create_service<TrajVelLimits>("set_traj_vel_limits", std::bind(&ODriveCanNode::traj_vel_limit_service_callback, this, _1, _2), srv_qos.get_rmw_qos_profile());
     set_traj_inertia_service_ = rclcpp::Node::create_service<TrajInertia>("set_traj_inertia", std::bind(&ODriveCanNode::traj_inertia_service_callback, this, _1, _2), srv_qos.get_rmw_qos_profile());
+
+    brake_resistor_sdo_timer_ = rclcpp::Node::create_wall_timer(4ms, std::bind(&ODriveCanNode::brake_resistor_sdo_timer_callback,this));
 }
 
 void ODriveCanNode::deinit() {
@@ -296,13 +298,17 @@ void ODriveCanNode::recv_callback(const can_frame& frame) {
     if (br_pub_flag_ == 0b11111) {
         br_publisher_->publish(br_stat_);
         br_pub_flag_ = 0;
-        RCLCPP_INFO(rclcpp::Node::get_logger(), "published br message");
+        // RCLCPP_INFO(rclcpp::Node::get_logger(), "published br message");
     }
 
     if (odrv_pub_flag_ == 0b111) {
         odrv_publisher_->publish(odrv_stat_);
         odrv_pub_flag_ = 0;
     }
+}
+
+void ODriveCanNode::brake_resistor_sdo_timer_callback(){
+    br_sdo1_evt_.set();
 }
 
 // *******************************************************************************************************************************************
@@ -346,6 +352,7 @@ void ODriveCanNode::request_clear_errors_callback() {
 }
 
 void ODriveCanNode::limits_service_callback(const std::shared_ptr<Limits::Request> request, std::shared_ptr<Limits::Response> response) {
+    /// TODO: Add code to check for valid limits
     {
         std::unique_lock<std::mutex> guard(limits_mutex_);
         vel_limit_ = request->velocity_limit;
@@ -373,6 +380,7 @@ void ODriveCanNode::set_limits_callback() {
 }
 
 void ODriveCanNode::traj_acc_limits_service_callback(const std::shared_ptr<TrajAccLimits::Request> request, std::shared_ptr<TrajAccLimits::Response> response) {
+    /// TODO: Add code to check for valid limits
     {
         std::unique_lock<std::mutex> guard(traj_acc_limits_mutex_);
         traj_acc_limit_ = request->traj_accel_limit;
@@ -400,6 +408,7 @@ void ODriveCanNode::set_traj_acc_callback() {
 }
 
 void ODriveCanNode::traj_vel_limit_service_callback(const std::shared_ptr<TrajVelLimits::Request> request, std::shared_ptr<TrajVelLimits::Response> response) {
+    /// TODO: Add code to check for valid limits
     {
         std::unique_lock<std::mutex> guard(traj_vel_limits_mutex_);
         traj_vel_limit_ = request->traj_vel_limit;
@@ -424,6 +433,7 @@ void ODriveCanNode::set_traj_vel_callback() {
 }
 
 void ODriveCanNode::traj_inertia_service_callback(const std::shared_ptr<TrajInertia::Request> request, std::shared_ptr<TrajInertia::Response> response) {
+    /// TODO: Add code to check for valid value 
     {
         std::unique_lock<std::mutex> guard(traj_inertia_mutex_);
         traj_inertia_ = request->traj_inertia;
@@ -453,8 +463,6 @@ void ODriveCanNode::ctrl_msg_subscriber_callback(const ControlMessage::SharedPtr
     std::lock_guard<std::mutex> guard(ctrl_msg_mutex_);
     ctrl_msg_ = *msg;
     sub_evt_.set();
-    br_sdo1_evt_.set();
-    // RCLCPP_INFO(rclcpp::Node::get_logger(), "set br_sdo1 message");
 }
 
 void ODriveCanNode::ctrl_msg_callback() {
