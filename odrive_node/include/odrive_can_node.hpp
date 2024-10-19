@@ -69,8 +69,6 @@ private:
     void br_sdo1_callback();
     void br_sdo2_callback();
     void br_sdo3_callback();
-    void br_sdo4_callback();
-    void br_sdo5_callback();
     // Utilities
     inline bool verify_length(const std::string&name, uint8_t expected, uint8_t length);
     void wait_for_result();
@@ -93,8 +91,6 @@ private:
     EpollEvent br_sdo1_evt_;
     EpollEvent br_sdo2_evt_;
     EpollEvent br_sdo3_evt_;
-    EpollEvent br_sdo4_evt_;
-    EpollEvent br_sdo5_evt_;
     short int br_pub_flag_ = 0;
     BrakeResistorStatus br_stat_ = BrakeResistorStatus();
     rclcpp::Publisher<BrakeResistorStatus>::SharedPtr br_publisher_;

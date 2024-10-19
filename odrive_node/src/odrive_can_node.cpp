@@ -36,9 +36,7 @@ enum OpCode : uint8_t {
 };
 
 enum Endpoints : uint16_t {
-    kBrakeResMeasCurrent = 620,
-    kBrakeResCurrStatus,
-    kBrakeResDuty,
+    kBrakeResDuty = 622,
     kBrakeResAddDuty,
     kBrakeResCurrent,
     kBrakeResChopperTemp,
@@ -99,8 +97,6 @@ void ODriveCanNode::deinit() {
     br_sdo1_evt_.deinit();
     br_sdo2_evt_.deinit();
     br_sdo3_evt_.deinit();
-    br_sdo4_evt_.deinit();
-    br_sdo5_evt_.deinit();
 }
 
 bool ODriveCanNode::init(EpollEventLoop* event_loop) {
@@ -154,14 +150,6 @@ bool ODriveCanNode::init(EpollEventLoop* event_loop) {
     }
     if (!br_sdo3_evt_.init(event_loop, std::bind(&ODriveCanNode::br_sdo3_callback, this))) {
         RCLCPP_ERROR(rclcpp::Node::get_logger(), "Failed to initialize Brake Resistor SDO event 3");
-        return false;
-    }
-    if (!br_sdo4_evt_.init(event_loop, std::bind(&ODriveCanNode::br_sdo4_callback, this))) {
-        RCLCPP_ERROR(rclcpp::Node::get_logger(), "Failed to initialize Brake Resistor SDO event 4");
-        return false;
-    }
-    if (!br_sdo5_evt_.init(event_loop, std::bind(&ODriveCanNode::br_sdo5_callback, this))) {
-        RCLCPP_ERROR(rclcpp::Node::get_logger(), "Failed to initialize Brake Resistor SDO event 5");
         return false;
     }
     RCLCPP_INFO(rclcpp::Node::get_logger(), "node_id: %d", node_id_);
@@ -247,38 +235,24 @@ void ODriveCanNode::recv_callback(const can_frame& frame) {
         case CmdId::kTxSdo: {
             if (!verify_length("kTxSdo", 8, frame.can_dlc)) break;
             uint16_t endpointID = read_le<uint16_t>(frame.data+1);
-            if(endpointID == Endpoints::kBrakeResMeasCurrent){
-                br_stat_.brake_resistor_meas_current = read_le<float>(frame.data + 4);
-                br_pub_flag_ |= 0b00001; 
+            if(endpointID == Endpoints::kBrakeResCurrent){
+                br_stat_.brake_resistor_calc_current = read_le<float>(frame.data + 4);
+                br_pub_flag_ |= 0b001; 
                 br_sdo2_evt_.set();
                 // RCLCPP_INFO(rclcpp::Node::get_logger(), "got br_sdo1 message");
                 // RCLCPP_INFO(rclcpp::Node::get_logger(), "set br_sdo2 message");
             }
-            else if(endpointID == Endpoints::kBrakeResCurrStatus){
-                br_stat_.brake_resistor_current_status = read_le<uint32_t>(frame.data + 4);
-                br_pub_flag_ |= 0b00010; 
+            else if(endpointID == Endpoints::kBrakeResChopperTemp){
+                br_stat_.brake_resistor_chopper_temp = read_le<float>(frame.data + 4);
+                br_pub_flag_ |= 0b010; 
                 br_sdo3_evt_.set();
                 // RCLCPP_INFO(rclcpp::Node::get_logger(), "got br_sdo2 message");
                 // RCLCPP_INFO(rclcpp::Node::get_logger(), "set br_sdo3 message");
             }
-            else if(endpointID == Endpoints::kBrakeResCurrent){
-                br_stat_.brake_resistor_calc_current = read_le<float>(frame.data + 4);
-                br_pub_flag_ |= 0b00100; 
-                br_sdo4_evt_.set();
-                // RCLCPP_INFO(rclcpp::Node::get_logger(), "got br_sdo3 message");
-                // RCLCPP_INFO(rclcpp::Node::get_logger(), "set br_sdo4 message");
-            }
-            else if(endpointID == Endpoints::kBrakeResChopperTemp){
-                br_stat_.brake_resistor_chopper_temp = read_le<float>(frame.data + 4);
-                br_pub_flag_ |= 0b01000; 
-                br_sdo5_evt_.set();
-                // RCLCPP_INFO(rclcpp::Node::get_logger(), "got br_sdo4 message");
-                // RCLCPP_INFO(rclcpp::Node::get_logger(), "set br_sdo5 message");
-            }
             else if(endpointID == Endpoints::kBrakeResDuty){
                 br_stat_.brake_resistor_duty_cycle = read_le<float>(frame.data + 4);
-                br_pub_flag_ |= 0b10000; 
-                // RCLCPP_INFO(rclcpp::Node::get_logger(), "got br_sdo5 message");
+                br_pub_flag_ |= 0b100; 
+                // RCLCPP_INFO(rclcpp::Node::get_logger(), "got br_sdo3 message");
             } else {
                 RCLCPP_WARN(rclcpp::Node::get_logger(), "Received unexpected SDO ID = %hu", endpointID);
             }
@@ -295,7 +269,7 @@ void ODriveCanNode::recv_callback(const can_frame& frame) {
         ctrl_pub_flag_ = 0;
     }
     
-    if (br_pub_flag_ == 0b11111) {
+    if (br_pub_flag_ == 0b111) {
         br_publisher_->publish(br_stat_);
         br_pub_flag_ = 0;
         // RCLCPP_INFO(rclcpp::Node::get_logger(), "published br message");
@@ -524,35 +498,13 @@ void ODriveCanNode::br_sdo1_callback(){
     struct can_frame frame = {};
     frame.can_id = node_id_ << 5 | kRxSdo;
     write_le<uint8_t>(OpCode::kRead, frame.data);
-    write_le<uint16_t>(Endpoints::kBrakeResMeasCurrent, frame.data + 1);
-    write_le<uint8_t>(0U, frame.data + 3);
-    write_le<uint32_t>(0U, frame.data + 4);
-    frame.can_dlc = 8;
-    can_intf_.send_can_frame(frame);
-}
-
-void ODriveCanNode::br_sdo2_callback(){
-    struct can_frame frame {};
-    frame.can_id = node_id_ << 5 | kRxSdo;
-    write_le<uint8_t>(OpCode::kRead, frame.data);
-    write_le<uint16_t>(Endpoints::kBrakeResCurrStatus, frame.data + 1);
-    write_le<uint8_t>(0U, frame.data + 3);
-    write_le<uint32_t>(0U, frame.data + 4);
-    frame.can_dlc = 8;
-    can_intf_.send_can_frame(frame);
-}
-
-void ODriveCanNode::br_sdo3_callback(){
-    struct can_frame frame = {};
-    frame.can_id = node_id_ << 5 | kRxSdo;
-    write_le<uint8_t>(OpCode::kRead, frame.data);
     write_le<uint16_t>(Endpoints::kBrakeResCurrent, frame.data + 1);
     write_le<uint8_t>(0U, frame.data + 3);
     write_le<uint32_t>(0U, frame.data + 4);
     frame.can_dlc = 8;
     can_intf_.send_can_frame(frame);
 }
-void ODriveCanNode::br_sdo4_callback(){
+void ODriveCanNode::br_sdo2_callback(){
     struct can_frame frame = {};
     frame.can_id = node_id_ << 5 | kRxSdo;
     write_le<uint8_t>(OpCode::kRead, frame.data);
@@ -562,7 +514,7 @@ void ODriveCanNode::br_sdo4_callback(){
     frame.can_dlc = 8;
     can_intf_.send_can_frame(frame);
 }
-void ODriveCanNode::br_sdo5_callback(){
+void ODriveCanNode::br_sdo3_callback(){
     struct can_frame frame = {};
     frame.can_id = node_id_ << 5 | kRxSdo;
     write_le<uint8_t>(OpCode::kRead, frame.data);
