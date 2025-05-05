@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ros-version: [humble, iron]
+        ros-version: [humble, iron, jazzy]
     
     steps:
       - name: Check out code
@@ -22,7 +22,7 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Cache Docker layers
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ matrix.ros-version }}-${{ github.sha }}
@@ -40,7 +40,8 @@ jobs:
 
       - name: Adjust permissions
         run: |
-          docker run -v ${{ github.workspace }}:/workspace -w /workspace local:${{ matrix.ros-version }} sudo chown -R vscode:vscode /workspace
+          docker run -v ${{ github.workspace }}:/workspace -w /workspace local:${{ matrix.ros-version }} \
+          sh -c 'username=$(id -un) && sudo chown -R "$username":"$username" /workspace'
 
       - name: Run colcon build
         run: |

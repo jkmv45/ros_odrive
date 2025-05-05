@@ -74,6 +74,7 @@ private:
     void wait_for_result();
     
     uint16_t node_id_;
+    bool axis_idle_on_shutdown_;
     SocketCanIntf can_intf_ = SocketCanIntf();
 
     rclcpp::TimerBase::SharedPtr brake_resistor_sdo_timer_;
