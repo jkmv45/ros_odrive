@@ -37,7 +37,7 @@ enum OpCode : uint8_t {
 };
 
 enum Endpoints : uint16_t {
-    kBrakeResDuty = 622,
+    kBrakeResDuty = 670,
     kBrakeResAddDuty,
     kBrakeResCurrent,
     kBrakeResChopperTemp,
